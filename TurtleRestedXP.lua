@@ -1,11 +1,13 @@
 -- TurtleRestedXP - Draggable rested XP progress bar for Turtle WoW
 -- Auto-shows when entering a resting zone, hides when leaving.
--- WoW 1.12 API: handlers use globals `event` / `arg1`, not parameters.
 
 local ADDON_NAME = "TurtleRestedXP"
 local userClosed = false
+local optionsDialog = nil
+local autoShow = true
+local autoHide = true
 
-local defaults = { x = 0, y = -200 }
+local defaults = { x = 0, y = -200, autoShow = true, autoHide = true }
 
 local function GetRestedPercent()
     local exhaustion = GetXPExhaustion()
@@ -101,6 +103,108 @@ local function UpdateBar()
     end
 end
 
+-- Options Dialog
+local function ShowOptionsDialog()
+    if optionsDialog then
+        optionsDialog:Show()
+        return
+    end
+    optionsDialog = CreateFrame("Frame", "TurtleRestedXPOptionsDialog", UIParent)
+    optionsDialog:SetWidth(200)
+    optionsDialog:SetHeight(100)
+    optionsDialog:SetPoint("CENTER", UIParent, "CENTER", 0, -100)
+    optionsDialog:SetMovable(true)
+    optionsDialog:EnableMouse(true)
+    optionsDialog:RegisterForDrag("LeftButton")
+    optionsDialog:SetBackdrop({
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeSize = 8,
+        insets = { left = 2, right = 2, top = 2, bottom = 2 },
+    })
+    optionsDialog:SetBackdropBorderColor(0.35, 0.35, 0.35, 1)
+    local bg = optionsDialog:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(optionsDialog)
+    bg:SetTexture(0, 0, 0, 0.65)
+
+    -- Title
+    local title = optionsDialog:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    title:SetPoint("TOPLEFT", optionsDialog, "TOPLEFT", 8, -6)
+    title:SetText("Turtle Rested XP")
+
+    -- Auto Show Checkbox
+    local showCB = CreateFrame("CheckButton", nil, optionsDialog, "UICheckButtonTemplate")
+    showCB:SetPoint("TOPLEFT", optionsDialog, "TOPLEFT", 10, -26)
+    showCB.text = optionsDialog:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    showCB.text:SetPoint("LEFT", showCB, "RIGHT", 2, 0)
+    showCB.text:SetText("Auto show in city/inn/tent")
+    showCB:SetChecked(autoShow)
+    showCB:SetScript("OnClick", function()
+        autoShow = this:GetChecked()
+        if TurtleRestedXPDB then TurtleRestedXPDB.autoShow = autoShow end
+    end)
+
+    -- Auto Hide Checkbox
+    local hideCB = CreateFrame("CheckButton", nil, optionsDialog, "UICheckButtonTemplate")
+    hideCB:SetPoint("TOPLEFT", showCB, "BOTTOMLEFT", 0, -4)
+    hideCB.text = optionsDialog:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    hideCB.text:SetPoint("LEFT", hideCB, "RIGHT", 2, 0)
+    hideCB.text:SetText("Auto hide when leaving")
+    hideCB:SetChecked(autoHide)
+    hideCB:SetScript("OnClick", function()
+        autoHide = this:GetChecked()
+        if TurtleRestedXPDB then TurtleRestedXPDB.autoHide = autoHide end
+    end)
+
+    -- Close button
+    local closeBtn = CreateFrame("Button", nil, optionsDialog)
+    closeBtn:SetWidth(14)
+    closeBtn:SetHeight(14)
+    closeBtn:SetPoint("TOPRIGHT", optionsDialog, "TOPRIGHT", -2, -1)
+    local closeTex = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    closeTex:SetAllPoints(closeBtn)
+    closeTex:SetJustifyH("CENTER")
+    closeTex:SetText("|cffff6060x|r")
+    closeBtn:SetScript("OnEnter", function()
+        closeTex:SetText("|cffff2020x|r")
+        GameTooltip:SetOwner(closeBtn, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Close options", 1, 0.4, 0.4)
+        GameTooltip:Show()
+    end)
+    closeBtn:SetScript("OnLeave", function()
+        closeTex:SetText("|cffff6060x|r")
+        GameTooltip:Hide()
+    end)
+    closeBtn:SetScript("OnClick", function()
+        optionsDialog:Hide()
+    end)
+
+    optionsDialog:SetScript("OnDragStart", function()
+        optionsDialog:StartMoving()
+    end)
+    optionsDialog:SetScript("OnDragStop", function()
+        optionsDialog:StopMovingOrSizing()
+    end)
+end
+
+-- Slash command
+
+SLASH_RESTEDXP1 = "/restedxp"
+SlashCmdList["RESTEDXP"] = function(msg)
+    msg = msg or ""
+    msg = string.gsub(msg, "^%s*(.-)%s*$", "%1")
+    if string.lower(msg) == "show" or string.lower(msg) == "toggle" then
+        if mainFrame:IsShown() then
+            mainFrame:Hide()
+            userClosed = true
+        else
+            mainFrame:Show()
+            userClosed = false
+        end
+    else
+        ShowOptionsDialog()
+    end
+end
+
 -- Dragging
 mainFrame:SetScript("OnDragStart", function()
     mainFrame:StartMoving()
@@ -146,9 +250,9 @@ eventFrame:SetScript("OnEvent", function()
     UpdateBar()
     if event == "PLAYER_UPDATE_RESTING" or event == "PLAYER_ENTERING_WORLD" then
         if IsResting() and not userClosed then
-            mainFrame:Show()
+            if autoShow then mainFrame:Show() end
         elseif not IsResting() then
-            mainFrame:Hide()
+            if autoHide then mainFrame:Hide() end
             userClosed = false
         end
     end
@@ -163,6 +267,8 @@ loadFrame:SetScript("OnEvent", function()
     for k, v in pairs(defaults) do
         if TurtleRestedXPDB[k] == nil then TurtleRestedXPDB[k] = v end
     end
+    autoShow = TurtleRestedXPDB.autoShow
+    autoHide = TurtleRestedXPDB.autoHide
     mainFrame:ClearAllPoints()
     mainFrame:SetPoint("CENTER", UIParent, "CENTER", TurtleRestedXPDB.x, TurtleRestedXPDB.y)
 end)
