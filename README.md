@@ -1,4 +1,4 @@
-# TurtleRestedXP
+# Turtle Rested XP
 
 A small draggable rested XP progress bar for Turtle WoW.
 
