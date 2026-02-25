@@ -1,8 +1,6 @@
 # TurtleRestedXP
 
-A small draggable rested XP progress bar for [Turtle WoW](https://turtle-wow.org/).
-
-![Interface: 11200](https://img.shields.io/badge/Interface-11200-blue)
+A small draggable rested XP progress bar for Turtle WoW.
 
 <img width="276" height="67" alt="image" src="https://github.com/user-attachments/assets/d8fa5277-bacb-4a42-86b2-bec9e0eeb78a" />
 
@@ -15,13 +13,3 @@ A small draggable rested XP progress bar for [Turtle WoW](https://turtle-wow.org
 - Close button to dismiss the bar until the next resting session
 - Hover tooltip with exact percentage and XP pool size
 - Color shifts from blue to green as rested XP fills up
-
-## Install
-
-1. Download or clone this repo into your `Interface/AddOns/` folder
-2. Make sure the folder is named `TurtleRestedXP`
-3. Restart the game or `/reload`
-
-## Usage
-
-Walk into an inn or city and the bar appears automatically. Click the **x** to close it — it will reappear next time you enter a resting zone. Drag it anywhere you like; the position is remembered.
