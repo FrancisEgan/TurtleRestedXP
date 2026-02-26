@@ -7,7 +7,7 @@ local optionsDialog = nil
 local autoShow = true
 local autoHide = true
 
-local defaults = { x = 0, y = -200, autoShow = true, autoHide = true }
+local defaults = { autoShow = true, autoHide = true }
 
 local function GetRestedPercent()
     local exhaustion = GetXPExhaustion()
@@ -23,6 +23,7 @@ mainFrame:SetWidth(200)
 mainFrame:SetHeight(30)
 mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -200)
 mainFrame:SetMovable(true)
+mainFrame:SetUserPlaced(true)
 mainFrame:EnableMouse(true)
 mainFrame:RegisterForDrag("LeftButton")
 mainFrame:Hide()
@@ -192,7 +193,8 @@ SLASH_RESTEDXP1 = "/restedxp"
 SlashCmdList["RESTEDXP"] = function(msg)
     msg = msg or ""
     msg = string.gsub(msg, "^%s*(.-)%s*$", "%1")
-    if string.lower(msg) == "show" or string.lower(msg) == "toggle" then
+    msg = string.lower(msg)
+    if msg == "show" or msg == "toggle" then
         if mainFrame:IsShown() then
             mainFrame:Hide()
             userClosed = true
@@ -200,6 +202,13 @@ SlashCmdList["RESTEDXP"] = function(msg)
             mainFrame:Show()
             userClosed = false
         end
+    elseif msg == "reset" then
+        mainFrame:StopMovingOrSizing()
+        mainFrame:SetUserPlaced(false)
+        mainFrame:ClearAllPoints()
+        mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        mainFrame:SetUserPlaced(true)
+        DEFAULT_CHAT_FRAME:AddMessage("|cffabd473Turtle Rested XP:|r position reset to center.")
     else
         ShowOptionsDialog()
     end
@@ -211,11 +220,7 @@ mainFrame:SetScript("OnDragStart", function()
 end)
 mainFrame:SetScript("OnDragStop", function()
     mainFrame:StopMovingOrSizing()
-    local _, _, _, x, y = mainFrame:GetPoint()
-    if TurtleRestedXPDB then
-        TurtleRestedXPDB.x = x
-        TurtleRestedXPDB.y = y
-    end
+    mainFrame:SetUserPlaced(true)
 end)
 
 -- Tooltip
@@ -258,7 +263,7 @@ eventFrame:SetScript("OnEvent", function()
     end
 end)
 
--- Saved variables: restore position on load
+-- Saved variables: restore options on load
 local loadFrame = CreateFrame("Frame")
 loadFrame:RegisterEvent("ADDON_LOADED")
 loadFrame:SetScript("OnEvent", function()
@@ -269,6 +274,4 @@ loadFrame:SetScript("OnEvent", function()
     end
     autoShow = TurtleRestedXPDB.autoShow
     autoHide = TurtleRestedXPDB.autoHide
-    mainFrame:ClearAllPoints()
-    mainFrame:SetPoint("CENTER", UIParent, "CENTER", TurtleRestedXPDB.x, TurtleRestedXPDB.y)
 end)
