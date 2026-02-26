@@ -18,3 +18,4 @@ A small draggable rested XP progress bar for Turtle WoW.
 
 - `/restedxp` — Show the options pane
 - `/restedxp show/toggle` — Show/hide the rested XP bar manually
+- `/restedxp reset` — Reset the position of the frame
