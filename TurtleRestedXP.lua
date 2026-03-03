@@ -140,7 +140,7 @@ local function ShowOptionsDialog()
     showCB.text:SetText("Auto show in city/inn/tent")
     showCB:SetChecked(autoShow)
     showCB:SetScript("OnClick", function()
-        autoShow = this:GetChecked()
+        autoShow = this:GetChecked() and true or false
         if TurtleRestedXPDB then TurtleRestedXPDB.autoShow = autoShow end
     end)
 
@@ -152,7 +152,7 @@ local function ShowOptionsDialog()
     hideCB.text:SetText("Auto hide when leaving")
     hideCB:SetChecked(autoHide)
     hideCB:SetScript("OnClick", function()
-        autoHide = this:GetChecked()
+        autoHide = this:GetChecked() and true or false
         if TurtleRestedXPDB then TurtleRestedXPDB.autoHide = autoHide end
     end)
 
