@@ -83,7 +83,9 @@ closeBtn:SetScript("OnLeave", function()
 end)
 closeBtn:SetScript("OnClick", function()
     mainFrame:Hide()
-    userClosed = true
+    if IsResting() then
+        userClosed = true
+    end
 end)
 
 -- Update bar values and color
