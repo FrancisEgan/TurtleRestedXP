@@ -7,6 +7,8 @@ A small draggable rested XP progress bar for Turtle WoW.
 ## Features
 
 - Shows a progress bar with your current rested XP percentage
+- Tent count shows how many tents you are benefitting from
+- Time estimate shows ETA to 100% rested
 - **Auto-shows** when you enter a resting zone (inn or city) (configurable)
 - **Auto-hides** when you leave a resting zone (configurable)
 - Draggable — position is saved between sessions
