@@ -312,10 +312,10 @@ rbTicker:SetScript("OnUpdate", function()
         end
         accumulatedRest = accumulatedRest + diff
 
-        if GetTime() - tickStartTime >= 2 then
+        if GetTime() - tickStartTime >= 3 then
             tickStartTime = GetTime()
             if accumulatedRest > 0 then
-                local ratePerSec = accumulatedRest / 2
+                local ratePerSec = accumulatedRest / 3
                 local tents = math.floor(ratePerSec / (maxRest * 0.001) + 0.5)
                 if tents > 0 then
                     knownTentCount = tents
