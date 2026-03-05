@@ -2,7 +2,7 @@
 
 A small draggable rested XP progress bar for Turtle WoW.
 
-<img width="276" height="67" alt="image" src="https://github.com/user-attachments/assets/d8fa5277-bacb-4a42-86b2-bec9e0eeb78a" />
+<img width="275" height="59" alt="image" src="https://github.com/user-attachments/assets/65e091af-0411-4cff-bd29-302ea509653a" />
 
 ## Features
 
