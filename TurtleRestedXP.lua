@@ -9,6 +9,15 @@ local autoHide = true
 
 local defaults = { autoShow = true, autoHide = true }
 
+-- Tent/resting rate tracking (ported from RestBar)
+local lastRestXP = 0
+local isTrackingRest = false
+local tickStartTime = 0
+local accumulatedRest = 0
+local knownTentCount = nil
+local knownTimeToFull = nil
+local rbLastUpd = 0
+
 local function GetRestedPercent()
     local exhaustion = GetXPExhaustion()
     local maxXP = UnitXPMax("player")
@@ -88,6 +97,23 @@ closeBtn:SetScript("OnClick", function()
     end
 end)
 
+local function GetRestSuffix()
+    if knownTentCount and knownTentCount > 0 and knownTimeToFull and knownTimeToFull > 0 then
+        local mins = math.floor(knownTimeToFull / 60)
+        local timeStr
+        if mins >= 60 then
+            timeStr = string.format("%dh%dm", math.floor(mins / 60), mins - math.floor(mins / 60) * 60)
+        elseif mins > 0 then
+            timeStr = string.format("%dm", mins)
+        else
+            timeStr = "<1m"
+        end
+        local tentWord = knownTentCount == 1 and "tent" or "tents"
+        return string.format(" - %d %s - %s", knownTentCount, tentWord, timeStr)
+    end
+    return ""
+end
+
 -- Update bar values and color
 local function UpdateBar()
     local pct = GetRestedPercent()
@@ -102,7 +128,7 @@ local function UpdateBar()
     else
         bar:SetValue(pct)
         bar:SetStatusBarColor(0.0, 0.4 + (pct / 100) * 0.4, 1.0 - (pct / 100) * 0.5, 1.0)
-        label:SetText(string.format("Rested: %.1f%%", pct))
+        label:SetText(string.format("Rested: %.1f%%", pct) .. GetRestSuffix())
     end
 end
 
@@ -261,6 +287,56 @@ eventFrame:SetScript("OnEvent", function()
         elseif not IsResting() then
             if autoHide then mainFrame:Hide() end
             userClosed = false
+        end
+    end
+end)
+
+-- Resting rate ticker: measures tent count and time to full rested (logic from RestBar)
+local rbTicker = CreateFrame("Frame")
+rbTicker:SetScript("OnUpdate", function()
+    if GetTime() - rbLastUpd < 0.1 then return end
+    rbLastUpd = GetTime()
+    if UnitLevel("player") == 60 then return end
+
+    local r = GetXPExhaustion() or 0
+    local maxRest = UnitXPMax("player") * 1.5
+    if lastRestXP == 0 then lastRestXP = r end
+    local diff = r - lastRestXP
+    lastRestXP = r
+
+    if IsResting() then
+        if not isTrackingRest then
+            isTrackingRest = true
+            tickStartTime = GetTime()
+            accumulatedRest = 0
+        end
+        accumulatedRest = accumulatedRest + diff
+
+        if GetTime() - tickStartTime >= 2 then
+            tickStartTime = GetTime()
+            if accumulatedRest > 0 then
+                local ratePerSec = accumulatedRest / 2
+                local tents = math.floor(ratePerSec / (maxRest * 0.001) + 0.5)
+                if tents > 0 then
+                    knownTentCount = tents
+                    knownTimeToFull = (maxRest - r) / (tents * (maxRest * 0.001))
+                else
+                    knownTentCount = nil
+                    knownTimeToFull = nil
+                end
+            else
+                knownTentCount = nil
+                knownTimeToFull = nil
+            end
+            accumulatedRest = 0
+            UpdateBar()
+        end
+    else
+        if isTrackingRest then
+            isTrackingRest = false
+            knownTentCount = nil
+            knownTimeToFull = nil
+            UpdateBar()
         end
     end
 end)
