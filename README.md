@@ -1,6 +1,6 @@
 # Turtle Rested XP
 
-A small draggable rested XP progress bar for Turtle WoW.
+A small draggable rested XP progress bar, adjusted for OctoWoW's 112.5%-of-a-level rested XP cap.
 
 <img width="275" height="59" alt="image" src="https://github.com/user-attachments/assets/65e091af-0411-4cff-bd29-302ea509653a" />
 

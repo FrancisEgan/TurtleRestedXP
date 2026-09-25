@@ -9,6 +9,11 @@ local autoHide = true
 
 local defaults = { autoShow = true, autoHide = true }
 
+-- OctoWoW caps the rested pool at 112.5% of the XP needed for one level.
+-- The original Turtle WoW value was 150%, which made a full Octo pool display
+-- as 75% and left the ETA waiting for an unreachable value.
+local RESTED_XP_CAP_LEVELS = 1.125
+
 -- Tent/resting rate tracking (ported from RestBar)
 local lastRestXP = 0
 local isTrackingRest = false
@@ -23,7 +28,7 @@ local function GetRestedPercent()
     local maxXP = UnitXPMax("player")
     if not maxXP or maxXP <= 0 then return nil end
     if not exhaustion or exhaustion <= 0 then return 0 end
-    return math.min((exhaustion / (maxXP * 1.5)) * 100, 100)
+    return math.min((exhaustion / (maxXP * RESTED_XP_CAP_LEVELS)) * 100, 100)
 end
 
 -- Frame
@@ -299,7 +304,7 @@ rbTicker:SetScript("OnUpdate", function()
     if UnitLevel("player") == 60 then return end
 
     local r = GetXPExhaustion() or 0
-    local maxRest = UnitXPMax("player") * 1.5
+    local maxRest = UnitXPMax("player") * RESTED_XP_CAP_LEVELS
     if lastRestXP == 0 then lastRestXP = r end
     local diff = r - lastRestXP
     lastRestXP = r

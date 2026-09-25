@@ -2,7 +2,7 @@
 ## Title: |cffabd473Turtle Rested XP
 ## Notes: Shows a progress bar for Rested XP when resting
 ## Author: Uncle Francis
-## Version: 1.0.0
+## Version: 1.0.1
 ## SavedVariables: TurtleRestedXPDB
 
 TurtleRestedXP.lua
