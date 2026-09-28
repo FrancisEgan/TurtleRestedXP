@@ -6,8 +6,9 @@ local userClosed = false
 local optionsDialog = nil
 local autoShow = true
 local autoHide = true
+local configuredWidth = 200
 
-local defaults = { autoShow = true, autoHide = true }
+local defaults = { autoShow = true, autoHide = true, width = 200 }
 
 -- OctoWoW caps the rested pool at 112.5% of the XP needed for one level.
 -- The original Turtle WoW value was 150%, which made a full Octo pool display
@@ -60,6 +61,31 @@ label:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -18, -2)
 label:SetJustifyH("LEFT")
 label:SetTextColor(1, 1, 1, 1)
 label:SetText("Rested: -")
+
+-- Measure text without the label's frame anchors constraining the result.
+local widthMeasure = mainFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+local LABEL_HORIZONTAL_PADDING = 26 -- left inset plus close button/right inset
+widthMeasure:SetText("Rested: 100.0%")
+local MIN_FRAME_WIDTH = math.ceil(widthMeasure:GetStringWidth() + LABEL_HORIZONTAL_PADDING)
+
+local function ApplyFrameWidth(text)
+    local width = math.max(configuredWidth, MIN_FRAME_WIDTH)
+    if text then
+        widthMeasure:SetText(text)
+        width = math.max(width, math.ceil(widthMeasure:GetStringWidth() + LABEL_HORIZONTAL_PADDING))
+    end
+    mainFrame:SetWidth(width)
+    return width
+end
+
+local function SetConfiguredWidth(value)
+    local width = tonumber(value)
+    if not width then return false end
+    configuredWidth = math.max(MIN_FRAME_WIDTH, math.floor(width + 0.5))
+    if TurtleRestedXPDB then TurtleRestedXPDB.width = configuredWidth end
+    ApplyFrameWidth(label:GetText())
+    return true
+end
 
 -- Status bar
 local bar = CreateFrame("StatusBar", nil, mainFrame)
@@ -122,30 +148,34 @@ end
 -- Update bar values and color
 local function UpdateBar()
     local pct = GetRestedPercent()
+    local text
     if pct == nil then
         bar:SetValue(0)
         bar:SetStatusBarColor(0.45, 0.45, 0.45, 1.0)
-        label:SetText("Rested: N/A")
+        text = "Rested: N/A"
     elseif pct <= 0 then
         bar:SetValue(0)
         bar:SetStatusBarColor(0.45, 0.45, 0.45, 1.0)
-        label:SetText("Rested: 0%")
+        text = "Rested: 0%"
     else
         bar:SetValue(pct)
         bar:SetStatusBarColor(0.0, 0.4 + (pct / 100) * 0.4, 1.0 - (pct / 100) * 0.5, 1.0)
-        label:SetText(string.format("Rested: %.1f%%", pct) .. GetRestSuffix())
+        text = string.format("Rested: %.1f%%", pct) .. GetRestSuffix()
     end
+    label:SetText(text)
+    ApplyFrameWidth(text)
 end
 
 -- Options Dialog
 local function ShowOptionsDialog()
     if optionsDialog then
+        optionsDialog.widthInput:SetText(tostring(configuredWidth))
         optionsDialog:Show()
         return
     end
     optionsDialog = CreateFrame("Frame", "TurtleRestedXPOptionsDialog", UIParent)
-    optionsDialog:SetWidth(200)
-    optionsDialog:SetHeight(100)
+    optionsDialog:SetWidth(220)
+    optionsDialog:SetHeight(137)
     optionsDialog:SetPoint("CENTER", UIParent, "CENTER", 0, -100)
     optionsDialog:SetMovable(true)
     optionsDialog:EnableMouse(true)
@@ -189,6 +219,33 @@ local function ShowOptionsDialog()
         if TurtleRestedXPDB then TurtleRestedXPDB.autoHide = autoHide end
     end)
 
+    -- Width Input
+    local widthLabel = optionsDialog:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    widthLabel:SetPoint("TOPLEFT", optionsDialog, "TOPLEFT", 12, -100)
+    widthLabel:SetText("Width (default: " .. defaults.width .. ")")
+
+    local widthInput = CreateFrame("EditBox", nil, optionsDialog, "InputBoxTemplate")
+    widthInput:SetWidth(48)
+    widthInput:SetHeight(20)
+    widthInput:SetPoint("LEFT", widthLabel, "RIGHT", 8, 0)
+    widthInput:SetAutoFocus(false)
+    widthInput:SetText(tostring(configuredWidth))
+    optionsDialog.widthInput = widthInput
+    widthInput:SetScript("OnEnterPressed", function()
+        this:ClearFocus()
+    end)
+    widthInput:SetScript("OnEscapePressed", function()
+        this:SetText(tostring(configuredWidth))
+        this:ClearFocus()
+    end)
+    widthInput:SetScript("OnEditFocusLost", function()
+        if not SetConfiguredWidth(this:GetText()) then
+            this:SetText(tostring(configuredWidth))
+            return
+        end
+        this:SetText(tostring(configuredWidth))
+    end)
+
     -- Close button
     local closeBtn = CreateFrame("Button", nil, optionsDialog)
     closeBtn:SetWidth(14)
@@ -226,8 +283,9 @@ SLASH_RESTEDXP1 = "/restedxp"
 SlashCmdList["RESTEDXP"] = function(msg)
     msg = msg or ""
     msg = string.gsub(msg, "^%s*(.-)%s*$", "%1")
-    msg = string.lower(msg)
-    if msg == "show" or msg == "toggle" then
+    local _, _, command = string.find(msg, "^(%S+)")
+    command = command and string.lower(command) or ""
+    if command == "show" or command == "toggle" then
         if mainFrame:IsShown() then
             mainFrame:Hide()
             userClosed = true
@@ -235,7 +293,7 @@ SlashCmdList["RESTEDXP"] = function(msg)
             mainFrame:Show()
             userClosed = false
         end
-    elseif msg == "reset" then
+    elseif command == "reset" then
         mainFrame:StopMovingOrSizing()
         mainFrame:SetUserPlaced(false)
         mainFrame:ClearAllPoints()
@@ -357,4 +415,8 @@ loadFrame:SetScript("OnEvent", function()
     end
     autoShow = TurtleRestedXPDB.autoShow
     autoHide = TurtleRestedXPDB.autoHide
+    configuredWidth = tonumber(TurtleRestedXPDB.width) or defaults.width
+    configuredWidth = math.max(MIN_FRAME_WIDTH, math.floor(configuredWidth + 0.5))
+    TurtleRestedXPDB.width = configuredWidth
+    ApplyFrameWidth(label:GetText())
 end)
